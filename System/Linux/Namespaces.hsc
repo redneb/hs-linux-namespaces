@@ -34,8 +34,8 @@ module System.Linux.Namespaces
     , NamespaceID
     , getNamespaceID
     -- * User/Group mappings
-    , UserMapping
-    , GroupMapping
+    , UserMapping(..)
+    , GroupMapping(..)
     , writeUserMappings
     , writeGroupMappings
     ) where
