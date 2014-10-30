@@ -30,10 +30,12 @@ module System.Linux.Namespaces
       Namespace(..)
     , unshare
     , setNamespace
+
     -- * Utility functions
     , enterNamespace
     , NamespaceID
     , getNamespaceID
+
     -- * User/Group mappings
     , UserMapping(..)
     , GroupMapping(..)
