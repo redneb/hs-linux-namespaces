@@ -150,12 +150,12 @@ getNamespaceID mpid ns = do
 -- | A single user mapping, used with user namespaces. See
 -- @user_namespaces(7)@ for more details.
 data UserMapping = UserMapping UserID UserID Int
-  deriving (Show, Eq)
+  deriving (Show, Read, Eq)
 
 -- | A single group mapping, used with user namespaces. See
 -- @user_namespaces(7)@ for more details.
 data GroupMapping = GroupMapping GroupID GroupID Int
-  deriving (Show, Eq)
+  deriving (Show, Read, Eq)
 
 -- | Define the user mappings for the specified user namespace. This
 -- function requires @\/proc@ to be mounted. See @user_namespaces(7)@

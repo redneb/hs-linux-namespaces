@@ -1,3 +1,7 @@
+vX.X.X.X
+
+	* Provide Read instances for UserMapping & GroupMapping.
+
 v0.1.1.1
 
 	* Improve documentation.
