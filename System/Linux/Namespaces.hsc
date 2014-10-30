@@ -41,6 +41,9 @@ module System.Linux.Namespaces
     , GroupMapping(..)
     , writeUserMappings
     , writeGroupMappings
+
+    -- * Example
+    -- $example
     ) where
 
 #define _GNU_SOURCE
@@ -203,3 +206,34 @@ foreign import ccall unsafe "unshare"
 
 foreign import ccall unsafe "setns"
     c_setns :: Fd -> CInt -> IO CInt
+
+--------------------------------------------------------------------------------
+
+-- $example
+-- Here's an example of creating a new network namespace. We also create
+-- a user namespace. This allows us to execute the program as an
+-- unprivileged user.
+--
+-- > import System.Process
+-- > import System.Posix.User
+-- > import System.Linux.Namespaces
+-- >
+-- > main :: IO ()
+-- > main = do
+-- >     putStrLn "*** Network interfaces in the parent namespace ***"
+-- >     callCommand "ip addr"
+-- >     putStrLn ""
+-- >
+-- >     -- find the uid, we must do that before unshare
+-- >     uid <- getEffectiveUserID
+-- >
+-- >     unshare [User, Network]
+-- >     -- map current user to user 0 (i.e. root) inside the namespace
+-- >     writeUserMappings Nothing [UserMapping 0 uid 1]
+-- >
+-- >     -- enable the loopback interface
+-- >     -- we can do that because we are root inside the namespace
+-- >     callCommand "ip link set dev lo up"
+-- >
+-- >     putStrLn "*** Network interfaces in the new namespace ***"
+-- >     callCommand "ip addr"
