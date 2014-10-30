@@ -1,4 +1,4 @@
-vX.X.X.X
+v0.1.2.0
 
 	* Provide Read instances for UserMapping & GroupMapping.
 
