@@ -137,7 +137,12 @@ instance Read NamespaceID where
 
 -- | Retrieve the id of a Namespace. Useful for debugging. This
 -- function requires @\/proc@ to be mounted.
-getNamespaceID :: Maybe ProcessID -> Namespace -> IO NamespaceID
+getNamespaceID
+    :: Maybe ProcessID -- ^ The @pid@ of any process in the target
+                       -- namespace. Use 'Nothing' for the namespace
+                       -- of the calling process.
+    -> Namespace -- ^ The type of the namespace.
+    -> IO NamespaceID
 getNamespaceID mpid ns = do
     s <- readSymbolicLink path
     let s' = takeWhile isDigit $ dropWhile (not . isDigit) s
@@ -161,9 +166,9 @@ data GroupMapping = GroupMapping GroupID GroupID Int
 -- function requires @\/proc@ to be mounted. See @user_namespaces(7)@
 -- for more details.
 writeUserMappings
-    :: Maybe ProcessID -- ^ The pid of any process in the target user
-                       -- namespace. 'Nothing' means use the current
-                       -- process.
+    :: Maybe ProcessID -- ^ The @pid@ of any process in the target user
+                       -- namespace. Use 'Nothing' for the namespace
+                       -- of the calling process.
     -> [UserMapping] -- The mappings.
     -> IO ()
 writeUserMappings mpid ms =
@@ -177,9 +182,9 @@ writeUserMappings mpid ms =
 -- function requires @\/proc@ to be mounted. See @user_namespaces(7)@
 -- for more details.
 writeGroupMappings
-    :: Maybe ProcessID -- ^ The pid of any process in the target user
-                       -- namespace. 'Nothing' means use the current
-                       -- process.
+    :: Maybe ProcessID -- ^ The @pid@ of any process in the target user
+                       -- namespace. Use 'Nothing' for the namespace
+                       -- of the calling process.
     -> [GroupMapping] -- The mappings.
     -> IO ()
 writeGroupMappings mpid ms =
