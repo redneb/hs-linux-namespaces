@@ -19,7 +19,7 @@ them in one thread will not affect the namespaces of the other threads
 of the same process. The threaded RTS makes it is hard to predict what
 OS thread will be used to run the haskell threads. Therefore, using this
 module in such applications will result in unpredictable behavior.
-Similarly, using this module in @ghci@ is also problematic.
+Similarly, using this module in @ghci@ is problematic too.
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
