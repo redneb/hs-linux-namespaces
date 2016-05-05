@@ -5,13 +5,16 @@ Stability   : provisional
 Portability : non-portable (requires Linux)
 
 This module provides bindings to the @unshare(2)@ and @setns(2)@ linux
-system calls. These functions can be used to create new namespaces by
-detaching the current process from its current namespaces, or to move
-the current process to an already existing namespace. Note that linux
-also provides the @clone(2)@ function which can be used to create new
-namespaces, but we do not support this function in this module; the way
-this function works makes it hard to use it from haskell as it interacts
-badly with GHC'c RTS.
+system calls. The former can be used to create new namespaces and move
+the calling process to them, whereas the latter can be used to move the
+calling process to an already existing namespace created by some other
+process.
+
+Note that linux provides another function related to namespaces which is
+not supported by this module: @clone(2)@. This function works like
+@fork(2)@ and is used to create new namespaces (like @unshare(2)@).
+Unfortunately, like @fork(2)@, it does not interact well with GHC'c RTS
+which is why it has been omitted from this module.
 
 /Note/: Using this module in a program that uses the threaded RTS does
 not make much sense. Namespaces are per process/thread and manipulating
@@ -93,9 +96,9 @@ unshare nss =
   where
     flags = foldl' (.|.) 0 (map toCloneFlags nss)
 
--- | Move process to an already existing namespace. See the man page of
--- @setns(2)@ for more details. See also 'enterNamespace' for a slightly
--- higher level version of this function.
+-- | Move the process to an already existing namespace. See the man page
+-- of @setns(2)@ for more details. See also 'enterNamespace' for a
+-- slightly higher level version of this function.
 setNamespace
     :: Fd -- ^ A file descriptor referring to a namespace file in a
           -- @\/proc\/[pid]\/ns\/@ directory.
@@ -111,9 +114,8 @@ setNamespace fd mns =
 
 --------------------------------------------------------------------------------
 
--- | Move process to an already existing namespace. This is a wrapper
--- around 'setNamespace'. This function requires @\/proc@ to be
--- mounted.
+-- | Move the process to an already existing namespace. This is a wrapper
+-- around 'setNamespace'. This function requires @\/proc@ to be mounted.
 enterNamespace
     :: ProcessID -- ^ The @pid@ of any process in the target namespace.
     -> Namespace -- ^ The type of the namespace.
