@@ -52,6 +52,11 @@ module System.Linux.Namespaces
 #define _GNU_SOURCE
 #include <sched.h>
 
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString       as S
+import           Data.ByteString (ByteString)
+import           System.FilePath
+
 import Foreign
 import Foreign.C
 import System.Posix.Types (Fd(..), ProcessID, UserID, GroupID)
@@ -143,7 +148,7 @@ getNamespaceID
     :: Maybe ProcessID -- ^ The @pid@ of any process in the target
                        -- namespace. Use 'Nothing' for the namespace
                        -- of the calling process.
-    -> Namespace -- ^ The type of the namespace.
+    -> Namespace       -- ^ The type of the namespace.
     -> IO NamespaceID
 getNamespaceID mpid ns = do
     s <- readSymbolicLink path
@@ -164,6 +169,10 @@ data UserMapping = UserMapping UserID UserID Int
 data GroupMapping = GroupMapping GroupID GroupID Int
   deriving (Show, Read, Eq)
 
+writeProcFile :: FilePath -> ByteString -> IO ()
+writeProcFile path bs = bracket (openFd path ReadWrite Nothing defaultFileFlags { nonBlock = True } ) closeFd $ \fd ->
+  S.useAsCStringLen bs $ \(ptr, nb) -> fdWriteBuf fd (castPtr ptr) (fromIntegral nb) >> return ()
+
 -- | Define the user mappings for the specified user namespace. This
 -- function requires @\/proc@ to be mounted. See @user_namespaces(7)@
 -- for more details.
@@ -171,12 +180,12 @@ writeUserMappings
     :: Maybe ProcessID -- ^ The @pid@ of any process in the target user
                        -- namespace. Use 'Nothing' for the namespace
                        -- of the calling process.
-    -> [UserMapping] -- The mappings.
+    -> [UserMapping]   -- ^ The mappings.
     -> IO ()
 writeUserMappings mpid ms =
-    writeFile path s
+    writeProcFile path (C.pack s)
   where
-    path = toProcDir mpid ++ "/uid_map"
+    path = toProcDir mpid </> "uid_map"
     s = concatMap toStr ms
     toStr (UserMapping o i l) = show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
 
@@ -187,23 +196,25 @@ writeGroupMappings
     :: Maybe ProcessID -- ^ The @pid@ of any process in the target user
                        -- namespace. Use 'Nothing' for the namespace
                        -- of the calling process.
-    -> [GroupMapping] -- The mappings.
+    -> [GroupMapping]  -- ^ The mappings.
     -> IO ()
-writeGroupMappings mpid ms =
-    writeFile path s
+writeGroupMappings mpid ms = do
+  -- see man 7 user_namespaces for details
+  writeProcFile (toProcDir mpid </> "setgroups") (C.pack "deny")
+  writeProcFile path (C.pack s)
   where
-    path = toProcDir mpid ++ "/gid_map"
+    path = toProcDir mpid </> "gid_map"
     s = concatMap toStr ms
     toStr (GroupMapping o i l) = show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
 
 --------------------------------------------------------------------------------
 
 toProcPath :: Maybe ProcessID -> Namespace -> String
-toProcPath mpid ns = toProcDir mpid ++ "/ns/" ++ toProcName ns
+toProcPath mpid ns = toProcDir mpid </> "ns" </> toProcName ns
 {-# INLINE toProcPath #-}
 
 toProcDir :: Maybe ProcessID -> String
-toProcDir mpid = "/proc/" ++ maybe "self" show mpid
+toProcDir mpid = "/proc" </> maybe "self" show mpid
 {-# INLINE toProcDir #-}
 
 --------------------------------------------------------------------------------
