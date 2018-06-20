@@ -55,7 +55,6 @@ module System.Linux.Namespaces
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString       as S
 import           Data.ByteString (ByteString)
-import           System.FilePath
 
 import Foreign
 import Foreign.C
@@ -66,6 +65,7 @@ import Control.Exception (bracket)
 import Data.List (foldl')
 import Data.Char (isDigit)
 import Control.Arrow (first)
+import Control.Monad (when)
 
 --------------------------------------------------------------------------------
 
@@ -170,7 +170,7 @@ data GroupMapping = GroupMapping GroupID GroupID Int
   deriving (Show, Read, Eq)
 
 writeProcFile :: FilePath -> ByteString -> IO ()
-writeProcFile path bs = bracket (openFd path ReadWrite Nothing defaultFileFlags { nonBlock = True } ) closeFd $ \fd ->
+writeProcFile path bs = bracket (openFd path WriteOnly Nothing defaultFileFlags) closeFd $ \fd ->
   S.useAsCStringLen bs $ \(ptr, nb) -> fdWriteBuf fd (castPtr ptr) (fromIntegral nb) >> return ()
 
 -- | Define the user mappings for the specified user namespace. This
@@ -185,7 +185,7 @@ writeUserMappings
 writeUserMappings mpid ms =
     writeProcFile path (C.pack s)
   where
-    path = toProcDir mpid </> "uid_map"
+    path = toProcDir mpid ++ "/uid_map"
     s = concatMap toStr ms
     toStr (UserMapping o i l) = show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
 
@@ -197,24 +197,28 @@ writeGroupMappings
                        -- namespace. Use 'Nothing' for the namespace
                        -- of the calling process.
     -> [GroupMapping]  -- ^ The mappings.
+    -> Bool            -- ^ Prevent processes in the child user namespace
+                       -- from calling @setgroups@. This is needed if the
+                       -- calling process does not have the @CAP_SETGID@
+                       -- capability in the parent namespace.
     -> IO ()
-writeGroupMappings mpid ms = do
+writeGroupMappings mpid ms denySetpgroups = do
   -- see man 7 user_namespaces for details
-  writeProcFile (toProcDir mpid </> "setgroups") (C.pack "deny")
+  when denySetpgroups (writeProcFile (toProcDir mpid ++ "/setgroups") (C.pack "deny"))
   writeProcFile path (C.pack s)
   where
-    path = toProcDir mpid </> "gid_map"
+    path = toProcDir mpid ++ "/gid_map"
     s = concatMap toStr ms
     toStr (GroupMapping o i l) = show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
 
 --------------------------------------------------------------------------------
 
 toProcPath :: Maybe ProcessID -> Namespace -> String
-toProcPath mpid ns = toProcDir mpid </> "ns" </> toProcName ns
+toProcPath mpid ns = toProcDir mpid ++ "/ns/" ++ toProcName ns
 {-# INLINE toProcPath #-}
 
 toProcDir :: Maybe ProcessID -> String
-toProcDir mpid = "/proc" </> maybe "self" show mpid
+toProcDir mpid = "/proc/" ++ maybe "self" show mpid
 {-# INLINE toProcDir #-}
 
 --------------------------------------------------------------------------------
