@@ -1,3 +1,9 @@
+vX.X.X.X
+
+	* Use raw POSIX io to write to proc files (Baojun Wang).
+	* Support denying setgroups to processes in user namespaces, needed to
+	support unprivileged creation of user namespaces (Baojun Wang).
+
 v0.1.2.0
 
 	* Provide Read instances for UserMapping & GroupMapping.
