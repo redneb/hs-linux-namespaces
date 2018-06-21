@@ -52,10 +52,6 @@ module System.Linux.Namespaces
 #define _GNU_SOURCE
 #include <sched.h>
 
-import qualified Data.ByteString.Char8 as C
-import qualified Data.ByteString       as S
-import           Data.ByteString (ByteString)
-
 import Foreign
 import Foreign.C
 import System.Posix.Types (Fd(..), ProcessID, UserID, GroupID)
@@ -66,6 +62,9 @@ import Data.List (foldl')
 import Data.Char (isDigit)
 import Control.Arrow (first)
 import Control.Monad (when)
+import qualified Data.ByteString.Char8 as C
+import qualified Data.ByteString       as S
+import Data.ByteString (ByteString)
 
 --------------------------------------------------------------------------------
 
@@ -169,10 +168,6 @@ data UserMapping = UserMapping UserID UserID Int
 data GroupMapping = GroupMapping GroupID GroupID Int
   deriving (Show, Read, Eq)
 
-writeProcFile :: FilePath -> ByteString -> IO ()
-writeProcFile path bs = bracket (openFd path WriteOnly Nothing defaultFileFlags) closeFd $ \fd ->
-  S.useAsCStringLen bs $ \(ptr, nb) -> fdWriteBuf fd (castPtr ptr) (fromIntegral nb) >> return ()
-
 -- | Define the user mappings for the specified user namespace. This
 -- function requires @\/proc@ to be mounted. See @user_namespaces(7)@
 -- for more details.
@@ -203,15 +198,22 @@ writeGroupMappings
                        -- capability in the parent namespace.
     -> IO ()
 writeGroupMappings mpid ms denySetpgroups = do
-  -- see man 7 user_namespaces for details
-  when denySetpgroups (writeProcFile (toProcDir mpid ++ "/setgroups") (C.pack "deny"))
-  writeProcFile path (C.pack s)
+    when denySetpgroups $
+        writeProcFile (dir ++ "/setgroups") (C.pack "deny")
+    writeProcFile (dir ++ "/gid_map") (C.pack s)
   where
-    path = toProcDir mpid ++ "/gid_map"
+    dir = toProcDir mpid
     s = concatMap toStr ms
-    toStr (GroupMapping o i l) = show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
+    toStr (GroupMapping o i l) =
+        show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
 
 --------------------------------------------------------------------------------
+
+writeProcFile :: FilePath -> ByteString -> IO ()
+writeProcFile path bs =
+    bracket (openFd path WriteOnly Nothing defaultFileFlags) closeFd $ \fd ->
+        S.useAsCStringLen bs $ \(ptr, nb) ->
+            fdWriteBuf fd (castPtr ptr) (fromIntegral nb) >> return ()
 
 toProcPath :: Maybe ProcessID -> Namespace -> String
 toProcPath mpid ns = toProcDir mpid ++ "/ns/" ++ toProcName ns
