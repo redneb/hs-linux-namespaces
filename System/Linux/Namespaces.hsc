@@ -108,7 +108,7 @@ setNamespace
           -- @\/proc\/[pid]\/ns\/@ directory.
     -> Maybe Namespace -- ^ Specify the namespace type that the file
                        -- descriptor must refer to. If the two types do not
-                       -- much, the function will fail. Use 'Nothing' to
+                       -- match, the function will fail. Use 'Nothing' to
                        -- allow any type.
     -> IO ()
 setNamespace fd mns =
@@ -197,8 +197,8 @@ writeGroupMappings
                        -- calling process does not have the @CAP_SETGID@
                        -- capability in the parent namespace.
     -> IO ()
-writeGroupMappings mpid ms denySetpgroups = do
-    when denySetpgroups $
+writeGroupMappings mpid ms denySetgroups = do
+    when denySetgroups $
         writeProcFile (dir ++ "/setgroups") (C.pack "deny")
     writeProcFile (dir ++ "/gid_map") (C.pack s)
   where
