@@ -65,6 +65,7 @@ import Control.Monad (when)
 import qualified Data.ByteString.Char8 as C
 import qualified Data.ByteString       as S
 import Data.ByteString (ByteString)
+import System.IO.Error (modifyIOError, ioeSetLocation)
 
 --------------------------------------------------------------------------------
 
@@ -128,7 +129,8 @@ enterNamespace pid ns =
     bracket openFd' closeFd $ \fd ->
         setNamespace fd (Just ns)
   where
-    openFd' = openFd path ReadOnly Nothing defaultFileFlags {nonBlock = True}
+    openFd' = ioeSetLoc "enterNamespace" $
+        openFd path ReadOnly Nothing defaultFileFlags {nonBlock = True}
     path = toProcPath (Just pid) ns
 
 -- | A unique namespace id.
@@ -150,7 +152,7 @@ getNamespaceID
     -> Namespace       -- ^ The type of the namespace.
     -> IO NamespaceID
 getNamespaceID mpid ns = do
-    s <- readSymbolicLink path
+    s <- ioeSetLoc "getNamespaceID" $ readSymbolicLink path
     let s' = takeWhile isDigit $ dropWhile (not . isDigit) s
     return (read s')
   where
@@ -178,7 +180,8 @@ writeUserMappings
     -> [UserMapping]   -- ^ The mappings.
     -> IO ()
 writeUserMappings mpid ms =
-    writeProcFile path (C.pack s)
+    ioeSetLoc "writeUserMappings" $
+        writeProcFile path (C.pack s)
   where
     path = toProcDir mpid ++ "/uid_map"
     s = concatMap toStr ms
@@ -197,10 +200,11 @@ writeGroupMappings
                        -- calling process does not have the @CAP_SETGID@
                        -- capability in the parent namespace.
     -> IO ()
-writeGroupMappings mpid ms denySetgroups = do
-    when denySetgroups $
-        writeProcFile (dir ++ "/setgroups") (C.pack "deny")
-    writeProcFile (dir ++ "/gid_map") (C.pack s)
+writeGroupMappings mpid ms denySetgroups =
+    ioeSetLoc "writeGroupMappings" $ do
+        when denySetgroups $
+            writeProcFile (dir ++ "/setgroups") (C.pack "deny")
+        writeProcFile (dir ++ "/gid_map") (C.pack s)
   where
     dir = toProcDir mpid
     s = concatMap toStr ms
@@ -222,6 +226,9 @@ toProcPath mpid ns = toProcDir mpid ++ "/ns/" ++ toProcName ns
 toProcDir :: Maybe ProcessID -> String
 toProcDir mpid = "/proc/" ++ maybe "self" show mpid
 {-# INLINE toProcDir #-}
+
+ioeSetLoc :: String -> IO r -> IO r
+ioeSetLoc loc = modifyIOError (flip ioeSetLocation loc)
 
 --------------------------------------------------------------------------------
 
