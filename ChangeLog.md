@@ -1,3 +1,7 @@
+#### X.Y.Z.W *YYYY-MM-DD*
+
+	* Support building with `unix-2.8`.
+
 #### 0.1.3.0 *2018-06-21*
 
 	* Use raw POSIX io to write to proc files (Baojun Wang).
