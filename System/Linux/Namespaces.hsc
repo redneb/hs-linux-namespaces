@@ -130,7 +130,11 @@ enterNamespace pid ns =
         setNamespace fd (Just ns)
   where
     openFd' = ioeSetLoc "enterNamespace" $
+#if MIN_VERSION_unix(2,8,0)
         openFd path ReadOnly defaultFileFlags {nonBlock = True}
+#else
+        openFd path ReadOnly Nothing defaultFileFlags {nonBlock = True}
+#endif
     path = toProcPath (Just pid) ns
 
 -- | A unique namespace id.
@@ -215,7 +219,11 @@ writeGroupMappings mpid ms denySetgroups =
 
 writeProcFile :: FilePath -> ByteString -> IO ()
 writeProcFile path bs =
+#if MIN_VERSION_unix(2,8,0)
     bracket (openFd path WriteOnly defaultFileFlags) closeFd $ \fd ->
+#else
+    bracket (openFd path WriteOnly Nothing defaultFileFlags) closeFd $ \fd ->
+#endif
         S.useAsCStringLen bs $ \(ptr, nb) ->
             fdWriteBuf fd (castPtr ptr) (fromIntegral nb) >> return ()
 
