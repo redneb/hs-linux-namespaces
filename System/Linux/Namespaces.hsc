@@ -23,6 +23,13 @@ of the same process. The threaded RTS makes it is hard to predict what
 OS thread will be used to run the haskell threads. Therefore, using this
 module in such applications will result in unpredictable behavior.
 Similarly, using this module in @ghci@ is problematic too.
+
+/Note/: The RTS ticker thread may cause @unshare@ to fail as on some GHC
+configurations it spawns its own thread using @clone3@ at the start of
+a program. To disable it, @-V0@ can be passed to RTS options directly
+or via cabal file as @ghc-options: -rtsopts "-with-rtsopts -V0"@.
+Note that this can have undesired consequences so use with care,
+see also https://github.com/redneb/hs-linux-namespaces/issues/3
 -}
 
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
