@@ -70,7 +70,7 @@ import System.IO.Error (modifyIOError, ioeSetLocation)
 --------------------------------------------------------------------------------
 
 -- | Types of namespaces.
-data Namespace = IPC | Network | Mount | PID | User | UTS
+data Namespace = IPC | Network | Mount | PID | User | UTS | CGroup | Time
   deriving (Show, Read, Eq, Bounded, Enum)
 
 toCloneFlags :: Namespace -> CInt
@@ -82,6 +82,8 @@ toCloneFlags ns =
         PID     -> (#const CLONE_NEWPID)
         User    -> (#const CLONE_NEWUSER)
         UTS     -> (#const CLONE_NEWUTS)
+        CGroup  -> (#const CLONE_NEWCGROUP)
+        Time    -> (#const CLONE_NEWTIME)
 
 toProcName :: Namespace -> String
 toProcName ns =
@@ -92,6 +94,8 @@ toProcName ns =
         PID     -> "pid"
         User    -> "user"
         UTS     -> "uts"
+        CGroup  -> "cgroup"
+        Time    -> "time"
 
 -- | Detach the process from one or more namespaces and move it to new
 -- ones. See the man page of @unshare(2)@ for more details.
