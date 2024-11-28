@@ -1,3 +1,7 @@
+#### X.Y.Z.W *YYYY-MM-DD*
+
+	* Add support for CGroup and time namespaces.
+
 #### 0.1.3.1 *2023-06-23*
 
 	* Support building with `unix-2.8`.
