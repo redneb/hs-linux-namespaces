@@ -45,6 +45,10 @@ module System.Linux.Namespaces
     , writeUserMappings
     , writeGroupMappings
 
+    -- * Setting offsets for virtualized clocks
+    , Clock(..)
+    , setClockOffset
+
     -- * Example
     -- $example
     ) where
@@ -54,7 +58,7 @@ module System.Linux.Namespaces
 
 import Foreign
 import Foreign.C
-import System.Posix.Types (Fd(..), ProcessID, UserID, GroupID)
+import System.Posix.Types (Fd(..), ProcessID, UserID, GroupID, EpochTime)
 import System.Posix.IO
 import System.Posix.Files (readSymbolicLink)
 import Control.Exception (bracket)
@@ -218,6 +222,32 @@ writeGroupMappings mpid ms denySetgroups =
     s = concatMap toStr ms
     toStr (GroupMapping o i l) =
         show o ++ " " ++ show i ++ " " ++ show l ++ "\n"
+
+--------------------------------------------------------------------------------
+
+-- | The virtualized clock whose offset is set
+-- @time_namespaces(7)@ for more details.
+data Clock = Monotonic | Boottime
+  deriving (Show, Read, Eq)
+
+-- | Set the offset for a virtualized clock. This can only be called before any
+-- process has been created in the time namespace. This function requires
+-- @\/proc@ to be mounted. See @time_namespaces(7)@ for more details.
+setClockOffset
+    :: Clock           -- ^ Specify the clock whose offset is set.
+    -> EpochTime       -- ^ The seconds component of the offset. This value
+                       -- can be negative.
+    -> CLong           -- ^ The nanoseconds component of the offset. This
+                       -- value must not be negative.
+    -> IO ()
+setClockOffset clock offsetSecs offsetNanosecs =
+    ioeSetLoc "setClockOffset" $ do
+        writeProcFile "/proc/self/timens_offsets" (C.pack s)
+  where
+    s = concat [clockId, " ", show offsetSecs, " ", show offsetNanosecs]
+    clockId = case clock of
+        Monotonic -> "monotonic"
+        Boottime -> "boottime"
 
 --------------------------------------------------------------------------------
 
