@@ -1,5 +1,5 @@
 name:                linux-namespaces
-version:             0.2.0.0
+version:             0.2.0.1
 synopsis:            Work with linux namespaces: create new or enter existing ones
 description:
   This library provides bindings to the @unshare(2)@ and @setns(2)@ linux
