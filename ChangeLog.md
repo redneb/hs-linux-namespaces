@@ -1,3 +1,7 @@
+#### X.Y.Z.W *YYYY-MM-DD*
+
+	* Fix build with pre 5.6 linux-headers, where there is no support for time namespaces.
+
 #### 0.2.0.0 *2024-11-29*
 
 	* Add support for CGroup and time namespaces.

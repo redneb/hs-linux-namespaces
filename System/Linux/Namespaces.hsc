@@ -74,7 +74,15 @@ import System.IO.Error (modifyIOError, ioeSetLocation)
 --------------------------------------------------------------------------------
 
 -- | Types of namespaces.
-data Namespace = IPC | Network | Mount | PID | User | UTS | CGroup | Time
+data Namespace
+    = IPC
+    | Network
+    | Mount
+    | PID
+    | User
+    | UTS
+    | CGroup
+    | Time
   deriving (Show, Read, Eq, Bounded, Enum)
 
 toCloneFlags :: Namespace -> CInt
@@ -87,7 +95,11 @@ toCloneFlags ns =
         User    -> (#const CLONE_NEWUSER)
         UTS     -> (#const CLONE_NEWUTS)
         CGroup  -> (#const CLONE_NEWCGROUP)
+#ifdef CLONE_NEWTIME
         Time    -> (#const CLONE_NEWTIME)
+#else
+        Time    -> error "CLONE_NEWTIME is not defined"
+#endif
 
 toProcName :: Namespace -> String
 toProcName ns =
